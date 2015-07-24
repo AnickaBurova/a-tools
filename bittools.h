@@ -135,5 +135,4 @@ template < typename tIntType, int tBitSign, typename tMaskType >
 tIntType get_signed_from_mask(tMaskType mask)
 {
     return ((1 << tBitSign) & mask) ? (tIntType)mask | ~get_bit_mask(0,tBitSign) : mask;
- // 	return ((1 << tBitSign) & mask) ? -~(mask - 1) : mask;
 }
