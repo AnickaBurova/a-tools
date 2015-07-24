@@ -1,0 +1,5 @@
+project a-tools ;
+
+alias a-tools : : <cxxflags>"-std=c++14" : : <include>./ ;
+
+unit-test test-tools : [ glob test-*.cpp ] /user-config//gtest : <library>/a-tools//a-tools <cxxflags>"-std=c++14" ;
