@@ -113,26 +113,34 @@ public:
 };
 
 template< typename tType = unsigned >
-constexpr auto get_bit_mask(int start, int size)
+constexpr auto get_bit_mask(uint32_t start, uint32_t size)
 {
     return ((1 << size)-1) << start;
-	// tType mask = 0;
-	// while(size --> 0)
-	// {
-	// 	mask <<= 1;
-	// 	mask |= 1;
-	// }
-	// return mask << start;
 }
 
-template< typename tMaskType, typename tIntType >
-tMaskType get_signed_to_mask(tIntType value )
-{
-    return value < 0 ? ~(tMaskType)(-value) + 1 : value;
-}
+template < int tByteSize >
+struct SignedOfSize;
 
-template < typename tIntType, int tBitSign, typename tMaskType >
-tIntType get_signed_from_mask(tMaskType mask)
+template <  > struct SignedOfSize<1> {using Type = int8_t;};
+template <  > struct SignedOfSize<2> {using Type = int16_t;};
+template <  > struct SignedOfSize<4> {using Type = int32_t;};
+
+template < typename tSignedType, typename tStoreType, int tBitStart, int tBitSize >
+struct SignedInt
 {
-    return ((1 << tBitSign) & mask) ? (tIntType)mask | ~get_bit_mask(0,tBitSign) : mask;
-}
+	using tS = typename SignedOfSize<sizeof(tStoreType)>::Type;
+	static const int tBitToTop = sizeof(tStoreType) * 8 - tBitStart - tBitSize;
+	static_assert(tBitToTop >= 0, "Encoded values won't fit in to tStoreType");
+	// static_assert(sizeof(tSignedType) == sizeof(tStoreType), "Size of Signed type and Store type must be equal.");
+	static tStoreType Encode(tSignedType input)
+	{
+		tStoreType a = ((tStoreType)input << (tBitToTop + tBitStart));
+		return a >> tBitToTop;
+	}
+
+	static tSignedType Decode(tStoreType input)
+	{
+		tStoreType a = input << tBitToTop;
+		return (tSignedType)((tS)a >> (tBitToTop + tBitStart));
+	}
+};
