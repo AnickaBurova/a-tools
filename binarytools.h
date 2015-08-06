@@ -8,15 +8,12 @@ template< class tValueType >
 inline tValueType read_value( std::istream& reader )
 {
 	tValueType value;
-
-	reader.read((char*)&value,sizeof(value));
-
+	reader.read((char*)&value,sizeof(tValueType));
 	return value;
 }
 
 template < typename tValueType >
 inline void write_value(std::ostream& writer, const tValueType& value)
-
 {
 	writer.write((char*)&value,sizeof(tValueType));
 }
@@ -217,7 +214,7 @@ struct uint24_t
     uint24_t():value{}{}
 
     uint24_t(uint32_t val)
-        :value{val}
+        :value{val & 0xffffff}
     { }
 
     operator uint32_t()const
@@ -227,7 +224,7 @@ struct uint24_t
 
     uint24_t& operator=(uint32_t val)
     {
-        value = val;
+        value = val & 0xffffff;
         return *this;
     }
 

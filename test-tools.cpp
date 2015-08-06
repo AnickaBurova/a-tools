@@ -2,6 +2,7 @@
 #include <gtest/gtest.h>
 #include "bittools.h"
 #include "stringtools.h"
+#include "binarytools.h"
 #include <boost/range/iterator_range.hpp>
 #include <boost/range/adaptors.hpp>
 #include <boost/range/adaptor/type_erased.hpp>
@@ -9,6 +10,10 @@
 #include <boost/range/algorithm.hpp>
 #include <boost/range/irange.hpp>
 #include <boost/range/any_range.hpp>
+#include <boost/iostreams/device/back_inserter.hpp>
+#include <boost/iostreams/stream.hpp>
+#include <boost/iostreams/filtering_stream.hpp>
+
 
 using namespace std;
 
@@ -143,6 +148,24 @@ TEST(Enums3, Declaration)
     }
 }
 
+}
+
+TEST(Uint24, ReadWrite)
+{
+    namespace io = boost::iostreams;
+    vector<char> data;
+    io::filtering_ostream writer{io::back_inserter(data)};
+    uint24_t a = 0xaabbccdd;
+    write_value(writer,a);
+
+    writer.flush();
+    EXPECT_EQ(3, data.size());
+
+    io::filtering_istream reader{boost::make_iterator_range(data)};
+
+    auto b = read_value<uint24_t>(reader);
+
+    EXPECT_EQ(a, b);
 }
 
 

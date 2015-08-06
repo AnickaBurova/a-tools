@@ -25,6 +25,32 @@ std::string to_string(bool value)
 	return value ? "true" : "false";
 }
 
+template < int tByteSize >
+struct SignedOfSize;
+
+template <  > struct SignedOfSize<1> {using Type = int8_t;};
+template <  > struct SignedOfSize<2> {using Type = int16_t;};
+template <  > struct SignedOfSize<4> {using Type = int32_t;};
+
+template < typename tSignedType, typename tStoreType, int tBitStart, int tBitSize >
+struct SignedInt
+{
+	using tS = typename SignedOfSize<sizeof(tStoreType)>::Type;
+	static const int tBitToTop = sizeof(tStoreType) * 8 - tBitStart - tBitSize;
+	static_assert(tBitToTop >= 0, "Encoded values won't fit in to tStoreType");
+	// static_assert(sizeof(tSignedType) == sizeof(tStoreType), "Size of Signed type and Store type must be equal.");
+	static tStoreType Encode(tSignedType input)
+	{
+		tStoreType a = ((tStoreType)input << (tBitToTop + tBitStart));
+		return a >> tBitToTop;
+	}
+
+	static tSignedType Decode(tStoreType input)
+	{
+		tStoreType a = input << tBitToTop;
+		return (tSignedType)((tS)a >> (tBitToTop + tBitStart));
+	}
+};
 
 /**
  * Helper class to easily apply bit masks.
@@ -36,7 +62,7 @@ std::string to_string(bool value)
 template< int TInitBits >
 class CBitBuilder
 {
-	int mValue;
+	uint32_t mValue;
 
 public:
     /**
@@ -74,10 +100,10 @@ public:
 	/**
 	 * Write signed value, and place the sign bit in TSignBit place.
 	 */
-	template< int TSignBit >
+	template< int tSignBit >
 	inline CBitBuilder & SetSigned( int value )
 	{
-		mValue |= (( TSignBit << 1 ) - 1 ) & value;
+		mValue |= SignedInt<int,uint32_t,0,tSignBit>::Encode(value);
 
 		return *this;
 	}
@@ -112,35 +138,15 @@ public:
 	int GetValue() const { return mValue; }
 };
 
+template<int TMask>
+bool BitState(int value)
+{
+	return (value & TMask) == TMask;
+}
+
+
 template< typename tType = unsigned >
 constexpr auto get_bit_mask(uint32_t start, uint32_t size)
 {
     return ((1 << size)-1) << start;
 }
-
-template < int tByteSize >
-struct SignedOfSize;
-
-template <  > struct SignedOfSize<1> {using Type = int8_t;};
-template <  > struct SignedOfSize<2> {using Type = int16_t;};
-template <  > struct SignedOfSize<4> {using Type = int32_t;};
-
-template < typename tSignedType, typename tStoreType, int tBitStart, int tBitSize >
-struct SignedInt
-{
-	using tS = typename SignedOfSize<sizeof(tStoreType)>::Type;
-	static const int tBitToTop = sizeof(tStoreType) * 8 - tBitStart - tBitSize;
-	static_assert(tBitToTop >= 0, "Encoded values won't fit in to tStoreType");
-	// static_assert(sizeof(tSignedType) == sizeof(tStoreType), "Size of Signed type and Store type must be equal.");
-	static tStoreType Encode(tSignedType input)
-	{
-		tStoreType a = ((tStoreType)input << (tBitToTop + tBitStart));
-		return a >> tBitToTop;
-	}
-
-	static tSignedType Decode(tStoreType input)
-	{
-		tStoreType a = input << tBitToTop;
-		return (tSignedType)((tS)a >> (tBitToTop + tBitStart));
-	}
-};
